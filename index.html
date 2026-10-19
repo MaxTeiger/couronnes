@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Couronnes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@700;800&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E9ECF2; --surface:#F8F9FB; --ink:#1D2433; --muted:#5A6378; --line:rgba(29,36,51,.22);
+  --gold:#E2A72E; --gold-deep:#B07A12; --error:#C2412D; --focus:#2F5FD0;
+  --region-filter:none;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161B26; --surface:#20283A; --ink:#E6E9F0; --muted:#9AA3B8; --line:rgba(230,233,240,.2);
+    --gold:#F0B940; --gold-deep:#C8901E; --error:#F07560; --focus:#86A8FF; --region-filter:brightness(.82) saturate(.9);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161B26; --surface:#20283A; --ink:#E6E9F0; --muted:#9AA3B8; --line:rgba(230,233,240,.2);
+  --gold:#F0B940; --gold-deep:#C8901E; --error:#F07560; --focus:#86A8FF; --region-filter:brightness(.82) saturate(.9);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Alegreya Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+main{max-width:560px;margin:0 auto;padding:20px 16px 32px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+h1{font-family:"Alegreya",Georgia,serif;font-weight:800;font-size:2.1rem;line-height:1;margin:0;letter-spacing:-.01em}
+.timer{font-family:"Alegreya",Georgia,serif;font-weight:700;font-size:1.5rem;font-variant-numeric:tabular-nums;color:var(--muted)}
+.levels,.sizebtns{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:3px;gap:3px;margin-bottom:10px}
+.sizes{display:flex;align-items:center;gap:10px;margin-bottom:16px;color:var(--muted);font-size:.95rem}
+.sizebtns{flex:1;grid-template-columns:repeat(6,1fr);margin:0}
+.levels button,.sizebtns button{font:inherit;font-size:.95rem;font-weight:500;color:var(--muted);background:none;border:0;border-radius:9px;padding:8px 4px;cursor:pointer;line-height:1.15}
+.levels button[aria-pressed="true"],.sizebtns button[aria-pressed="true"]{background:var(--ink);color:var(--bg);font-weight:700}
+.board-wrap{position:relative}
+.board{display:grid;width:100%;aspect-ratio:1;border:3px solid var(--ink);border-radius:6px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background:var(--ink)}
+.cell{position:relative;border:0;padding:0;margin:0;font:inherit;cursor:pointer;display:grid;place-items:center;border-style:solid;border-color:var(--ink);touch-action:none}
+.cell .bgc{position:absolute;inset:0;filter:var(--region-filter);z-index:0}
+.cell svg{position:relative;z-index:1;pointer-events:none}
+.cell .x{width:34%;height:34%;color:rgba(29,36,51,.62)}
+.cell .x.auto{color:rgba(29,36,51,.28)}
+.cell .crown{width:68%;height:68%;animation:drop .22s ease-out}
+.cell .crown .body{fill:var(--gold);stroke:#1D2433;stroke-width:1.4;stroke-linejoin:round}
+.cell .crown .gem{fill:var(--gold);stroke:#1D2433;stroke-width:1.2}
+.cell.bad .crown .body,.cell.bad .crown .gem{fill:var(--error)}
+.cell.bad .bgc{background-image:repeating-linear-gradient(45deg,rgba(194,65,45,.28) 0 4px,transparent 4px 9px)}
+.cell:focus-visible{outline:3px solid var(--focus);outline-offset:-4px;z-index:2}
+.cell.flash .bgc{animation:flash .9s ease-out}
+@keyframes drop{from{transform:scale(.4) translateY(-20%);opacity:0}to{transform:none;opacity:1}}
+@keyframes flash{0%,40%{box-shadow:inset 0 0 0 4px var(--focus)}100%{box-shadow:inset 0 0 0 0 transparent}}
+.won .cell .crown{animation:bounce .6s ease-out both}
+@keyframes bounce{0%{transform:none}40%{transform:translateY(-18%) scale(1.12)}100%{transform:none}}
+.status{display:flex;justify-content:space-between;align-items:center;margin:10px 2px 14px;color:var(--muted);font-size:.95rem;min-height:1.4em}
+.status .warn{color:var(--error);font-weight:500}
+.actions{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.actions button,.primary{font:inherit;font-weight:500;font-size:.95rem;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:10px 6px;cursor:pointer}
+.actions button:disabled{opacity:.45;cursor:default}
+.actions .new{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.opts{display:flex;align-items:center;gap:10px;margin-top:16px;color:var(--muted);font-size:.95rem}
+.opts input{width:18px;height:18px;accent-color:var(--ink)}
+details{margin-top:14px;color:var(--muted);font-size:.95rem}
+details summary{cursor:pointer;color:var(--ink);font-weight:500}
+details p{margin:8px 0 0;max-width:62ch}
+.loading{position:absolute;inset:0;display:none;place-items:center;background:color-mix(in srgb,var(--bg) 70%,transparent);font-weight:500;border-radius:6px}
+.board-wrap.busy .loading{display:grid}
+dialog{border:0;border-radius:16px;padding:26px 24px 22px;background:var(--surface);color:var(--ink);max-width:min(360px,92vw);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(15,20,30,.45)}
+dialog h2{font-family:"Alegreya",Georgia,serif;font-size:1.7rem;margin:0 0 6px}
+dialog p{margin:0 0 4px;color:var(--muted)}
+dialog .big{font-family:"Alegreya",Georgia,serif;font-size:2.4rem;font-weight:800;color:var(--ink);margin:6px 0;font-variant-numeric:tabular-nums}
+dialog .row{display:flex;gap:8px;margin-top:16px}
+dialog .row button{flex:1;white-space:nowrap;padding:10px 12px}
+.primary.dark{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+.cell.hl::after,.cell.hl-src::after{content:"";position:absolute;inset:3px;border-radius:4px;z-index:2;pointer-events:none}
+.cell.hl::after{border:3px solid var(--focus);animation:pulse 1.4s ease-in-out infinite}
+.cell.hl-src::after{border:2px dashed var(--ink);opacity:.75}
+@keyframes pulse{50%{opacity:.35}}
+.hintbox{background:var(--surface);border:1.5px solid var(--focus);border-radius:12px;padding:12px 14px;margin:0 0 14px}
+.hintbox[hidden]{display:none}
+.hintbox p{margin:0 0 10px;max-width:62ch}
+.hintrow{display:flex;gap:8px;flex-wrap:wrap}
+.hintrow button{flex:1 1 auto}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+@media (max-width:420px){.actions button{font-size:.86rem;padding:10px 2px}}
+@media (max-width:350px){.actions button{font-size:.78rem}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Couronnes</h1>
+    <div class="timer" id="timer" aria-label="Temps écoulé">0:00</div>
+  </header>
+  <div class="levels" role="group" aria-label="Difficulté" id="levels"></div>
+  <div class="sizes"><span id="sizeLabel">Taille</span><div class="sizebtns" role="group" aria-labelledby="sizeLabel" id="sizes"></div></div>
+  <div class="board-wrap" id="wrap">
+    <div class="board" id="board" role="grid" aria-label="Plateau"></div>
+    <div class="loading">Création de la grille…</div>
+  </div>
+  <div class="status" aria-live="polite"><span id="count"></span><span id="warn" class="warn"></span></div>
+  <div class="hintbox" id="hintBox" hidden>
+    <p id="hintText"></p>
+    <div class="hintrow"><button type="button" id="hintApply" class="primary dark">Marquer ces cases</button><button type="button" id="hintClose" class="primary">Fermer</button></div>
+  </div>
+  <div class="actions">
+    <button id="undo" type="button">Annuler</button>
+    <button id="hint" type="button">Indice</button>
+    <button id="reveal" type="button" aria-label="Placer une couronne de la solution">Couronne</button>
+    <button id="clear" type="button">Effacer</button>
+    <button id="new" class="new" type="button">Nouvelle</button>
+  </div>
+  <label class="opts"><input type="checkbox" id="auto"> Marquer automatiquement les cases bloquées</label>
+  <details>
+    <summary>Règles</summary>
+    <p>Place une couronne par ligne, une par colonne et une par zone de couleur. Deux couronnes ne peuvent pas se toucher, même en diagonale.</p>
+    <p>L'indice explique la prochaine déduction possible à partir de ta grille : les cases concernées sont entourées en trait plein, celles qui justifient la déduction en pointillés.</p>
+    <p>Le bouton Couronne place directement une couronne de la solution, sans explication. Comme les indices, il exclut le temps de la partie des records.</p>
+    <p>Un appui marque une case comme inutilisable, un deuxième y place une couronne, un troisième la vide. Glisse le doigt sur plusieurs cases pour les marquer d'un coup. Avec le marquage automatique, poser une couronne marque toutes les cases où une autre couronne ne peut plus aller, et retirer la couronne enlève ces marques.</p>
+  </details>
+</main>
+<dialog id="win">
+  <h2>Grille résolue</h2>
+  <p id="winLevel"></p>
+  <div class="big" id="winTime"></div>
+  <p id="winBest"></p>
+  <div class="row">
+    <button class="primary" type="button" id="winClose">Fermer</button>
+    <button class="primary dark" type="button" id="winNew">Nouvelle grille</button>
+  </div>
+</dialog>
+<script>
+// ---------- Génération ----------
+function rnd(n){return Math.floor(Math.random()*n);}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+function randomSolution(n){
+  const sol=[],used=new Array(n).fill(false);
+  function bt(r){ if(r===n) return true;
+    for(const c of shuffle([...Array(n).keys()])){
+      if(used[c]) continue; if(r>0 && Math.abs(sol[r-1]-c)<=1) continue;
+      used[c]=true; sol[r]=c; if(bt(r+1)) return true; used[c]=false;}
+    return false;}
+  return bt(0)?sol.slice():null;
+}
+function countSolutions(n,reg,cap){
+  let count=0; const colU=new Array(n).fill(false), regU=new Array(n).fill(false);
+  function bt(r,prev){ if(r===n){count++;return count>=cap;}
+    for(let c=0;c<n;c++){
+      if(colU[c]) continue; if(prev>=0 && Math.abs(prev-c)<=1) continue;
+      const g=reg[r*n+c]; if(regU[g]) continue;
+      colU[c]=regU[g]=true; const stop=bt(r+1,c); colU[c]=regU[g]=false; if(stop) return true;}
+    return false;}
+  bt(0,-1); return count;
+}
+const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+function growRegions(n,sol){
+  const reg=new Array(n*n).fill(-1);
+  for(let r=0;r<n;r++) reg[r*n+sol[r]]=r;
+  let left=n*n-n;
+  while(left>0){
+    const i=rnd(n*n); if(reg[i]<0) continue;
+    const r=Math.floor(i/n),c=i%n; const [dr,dc]=DIRS[rnd(4)];
+    const nr=r+dr,nc=c+dc; if(nr<0||nc<0||nr>=n||nc>=n) continue;
+    const j=nr*n+nc; if(reg[j]>=0) continue; reg[j]=reg[i]; left--;}
+  return reg;
+}
+function connectedWithout(n,reg,g,skip,seed){
+  const seen=new Set([seed]),st=[seed]; let total=0;
+  for(let i=0;i<n*n;i++) if(reg[i]===g && i!==skip) total++;
+  while(st.length){const i=st.pop(); const r=Math.floor(i/n),c=i%n;
+    for(const [dr,dc] of DIRS){const nr=r+dr,nc=c+dc; if(nr<0||nc<0||nr>=n||nc>=n) continue;
+      const j=nr*n+nc; if(j===skip||seen.has(j)||reg[j]!==g) continue; seen.add(j); st.push(j);}}
+  return seen.size===total;
+}
+function generateUnique(n){
+  for(let attempt=0;attempt<50;attempt++){
+    const sol=randomSolution(n); const reg=growRegions(n,sol);
+    const seeds=new Set(sol.map((c,r)=>r*n+c));
+    let cnt=countSolutions(n,reg,50);
+    for(let it=0;it<3000 && cnt>1;it++){
+      const i=rnd(n*n); if(seeds.has(i)) continue;
+      const r=Math.floor(i/n),c=i%n; const [dr,dc]=DIRS[rnd(4)];
+      const nr=r+dr,nc=c+dc; if(nr<0||nc<0||nr>=n||nc>=n) continue;
+      const g=reg[i],t=reg[nr*n+nc]; if(g===t) continue;
+      if(!connectedWithout(n,reg,g,i,g*n+sol[g])) continue;
+      reg[i]=t; const nc2=countSolutions(n,reg,50);
+      if(nc2<=cnt || Math.random()<0.05) cnt=nc2; else reg[i]=g;
+    }
+    if(cnt===1) return {n,sol,reg};
+  }
+  return null;
+}
+// Note de difficulté logique : 1 = évidences, 2 = confinement simple, 3 = confinements multiples, 4 = raisonnement par l'absurde
+function grade(n,reg){
+  const N=n*n, cand=new Array(N).fill(true), placed=new Array(N).fill(false);
+  const units=[];
+  for(let r=0;r<n;r++) units.push({t:'row',k:r,cells:[...Array(n).keys()].map(c=>r*n+c)});
+  for(let c=0;c<n;c++) units.push({t:'col',k:c,cells:[...Array(n).keys()].map(r=>r*n+c)});
+  for(let g=0;g<n;g++) units.push({t:'reg',k:g,cells:[...Array(N).keys()].filter(i=>reg[i]===g)});
+  const R=i=>Math.floor(i/n), C=i=>i%n;
+  function place(cand,placed,i){placed[i]=true;cand[i]=false;
+    const r=R(i),c=C(i);
+    for(let j=0;j<N;j++){ if(j===i) continue; const rj=R(j),cj=C(j);
+      if(rj===r||cj===c||reg[j]===reg[i]||(Math.abs(rj-r)<=1&&Math.abs(cj-c)<=1)) cand[j]=false;}}
+  const done=(placed,u)=>u.cells.some(i=>placed[i]);
+  function singles(cand,placed){
+    for(const u of units){ if(done(placed,u)) continue;
+      const cs=u.cells.filter(i=>cand[i]);
+      if(cs.length===0) return 'contra';
+      if(cs.length===1){place(cand,placed,cs[0]);return true;}}
+    return false;}
+  function confine(maxK){
+    const groups=[['reg','row',i=>R(i)],['reg','col',i=>C(i)],['row','reg',i=>reg[i]],['col','reg',i=>reg[i]]];
+    for(const [a,b,key] of groups){
+      const us=units.filter(u=>u.t===a && !done(placed,u)); const m=us.length;
+      for(let mask=1;mask<(1<<m);mask++){
+        let k=0; for(let x=mask;x;x&=x-1) k++; if(k>maxK || k===m) continue;
+        const keys=new Set(), cells=new Set();
+        for(let s=0;s<m;s++) if(mask>>s&1) for(const i of us[s].cells) if(cand[i]){keys.add(key(i));cells.add(i);}
+        if(keys.size!==k) continue;
+        let prog=false;
+        for(const v of keys){ const ub=units.find(u=>u.t===b&&u.k===v);
+          for(const i of ub.cells) if(cand[i]&&!cells.has(i)){cand[i]=false;prog=true;}}
+        if(prog) return true;
+      }}
+    return false;}
+  function forcing(){
+    for(let i=0;i<N;i++){ if(!cand[i]) continue;
+      const c2=cand.slice(),p2=placed.slice(); place(c2,p2,i);
+      let res; do{res=singles(c2,p2);}while(res===true);
+      if(res==='contra'){cand[i]=false;return true;}}
+    return false;}
+  let level=1;
+  for(let guard=0;guard<500;guard++){
+    if(placed.filter(Boolean).length===n) return level;
+    const s=singles(cand,placed); if(s==='contra') return -1; if(s) continue;
+    if(confine(1)){level=Math.max(level,2);continue;}
+    if(confine(n)){level=Math.max(level,3);continue;}
+    if(forcing()){level=Math.max(level,4);continue;}
+    return 5;
+  }
+  return 5;
+}
+const LEVELS=[
+  {id:'facile',name:'Facile',min:1,max:2},
+  {id:'moyen',name:'Moyen',min:2,max:3},
+  {id:'difficile',name:'Difficile',min:3,max:4},
+  {id:'expert',name:'Expert',min:4,max:4},
+];
+const SIZES=[5,6,7,8,9,10];
+// Génère par tentatives successives en rendant la main au navigateur entre chaque
+async function generatePuzzle(lv,n,isCurrent){
+  let best=null; const t0=performance.now();
+  for(let t=0;t<80;t++){
+    await new Promise(r=>setTimeout(r,0)); if(!isCurrent()) return null;
+    const p=generateUnique(n); if(!p) continue;
+    const g=grade(n,p.reg); p.grade=g;
+    if(g>=lv.min && g<=lv.max) return p;
+    if(!best || Math.abs(g-lv.max)<Math.abs(best.grade-lv.max)) best=p;
+    if(best && performance.now()-t0>12000) break;
+  }
+  return best;
+}
+
+// ---------- Jeu ----------
+const COLORS=['#F2A99E','#F4CF7C','#B7DA8C','#8FD0DC','#BBA8E6','#F5B184','#A3BEEF','#DCD5C3','#EAB4DA','#B9BEC9'];
+const $=id=>document.getElementById(id);
+const boardEl=$('board');
+let S=null; // {lv,n,sol,reg,marks,elapsed,hints,won}
+let history=[], cells=[], timerId=null, lastTick=0;
+let bestTimes={};
+const store={
+  get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+};
+const fmt=s=>{s=Math.floor(s);const h=Math.floor(s/3600),m=Math.floor(s/60)%60,ss=String(s%60).padStart(2,'0');return h?`${h}:${String(m).padStart(2,'0')}:${ss}`:`${m}:${ss}`;};
+
+const CROWN='<svg class="crown" viewBox="0 0 24 24" aria-hidden="true"><path class="body" d="M3.5 8.5 7.6 13 12 5.5l4.4 7.5 4.1-4.5-1.8 10.5H5.3z"/><circle class="gem" cx="3.5" cy="8.2" r="1.7"/><circle class="gem" cx="12" cy="4.6" r="1.7"/><circle class="gem" cx="20.5" cy="8.2" r="1.7"/></svg>';
+const XM=(a)=>`<svg class="x${a?' auto':''}" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>`;
+
+let pref={lv:'moyen',n:7};
+function buildLevels(){
+  const el=$('levels');
+  LEVELS.forEach(lv=>{
+    const b=document.createElement('button'); b.type='button'; b.dataset.id=lv.id; b.textContent=lv.name;
+    b.addEventListener('click',()=>{ if(pref.lv===lv.id) return; if(!confirmLeave()) return; pref.lv=lv.id; newGame(); });
+    el.appendChild(b);
+  });
+  const sz=$('sizes');
+  SIZES.forEach(n=>{
+    const b=document.createElement('button'); b.type='button'; b.dataset.n=n; b.textContent=n; b.setAttribute('aria-label',`${n} par ${n}`);
+    b.addEventListener('click',()=>{ if(pref.n===n) return; if(!confirmLeave()) return; pref.n=n; newGame(); });
+    sz.appendChild(b);
+  });
+}
+function confirmLeave(){ return !S || genBusy || !S.marks.some(m=>m) || S.won || confirm('Abandonner la grille en cours ?'); }
+function setLevelUI(){
+  document.querySelectorAll('#levels button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.id===pref.lv)));
+  document.querySelectorAll('#sizes button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.n===pref.n)));
+}
+
+let genToken=0, genBusy=false;
+// Attribution des couleurs : évite que deux zones voisines aient des teintes proches
+const SIMILAR=[[0,5],[0,8],[1,5],[1,7],[3,6],[4,6],[4,8],[7,9],[2,3]];
+function pickColors(n,reg){
+  const adj=new Set();
+  for(let i=0;i<n*n;i++){const r=Math.floor(i/n),c=i%n;
+    if(c<n-1&&reg[i]!==reg[i+1]) adj.add(Math.min(reg[i],reg[i+1])+','+Math.max(reg[i],reg[i+1]));
+    if(r<n-1&&reg[i]!==reg[i+n]) adj.add(Math.min(reg[i],reg[i+n])+','+Math.max(reg[i],reg[i+n]));}
+  const sim=new Set(SIMILAR.flatMap(([a,b])=>[a+','+b,b+','+a]));
+  let best=null,bs=1e9;
+  for(let t=0;t<400&&bs>0;t++){
+    const perm=shuffle([...Array(COLORS.length).keys()]).slice(0,n); let sc=0;
+    for(const e of adj){const [a,b]=e.split(',').map(Number); if(sim.has(perm[a]+','+perm[b])) sc++;}
+    if(sc<bs){bs=sc;best=perm;}}
+  return best;
+}
+async function newGame(){
+  const lv=LEVELS.find(l=>l.id===pref.lv)||LEVELS[1], n=pref.n, token=++genToken;
+  store.set('couronnes-pref',pref); setLevelUI(); clearHintSafe();
+  genBusy=true; $('wrap').classList.add('busy'); stopTimer();
+  const p=await generatePuzzle(lv,n,()=>token===genToken);
+  if(token!==genToken||!p) return;
+  genBusy=false;
+  S={lv:lv.id,n,sol:p.sol,reg:p.reg,colors:pickColors(n,p.reg),marks:new Array(n*n).fill(0),autoX:new Array(n*n).fill(false),elapsed:0,hints:0,won:false};
+  history=[]; $('wrap').classList.remove('busy');
+  render(true); startTimer(); save();
+}
+function clearHintSafe(){ if(cells.length) clearHint(); }
+
+function render(rebuild){
+  const n=S.n;
+  setLevelUI();
+  if(rebuild){
+    boardEl.innerHTML=''; boardEl.classList.remove('won');
+    boardEl.style.gridTemplateColumns=`repeat(${n},1fr)`; boardEl.style.gridTemplateRows=`repeat(${n},1fr)`;
+    cells=[];
+    for(let i=0;i<n*n;i++){
+      const r=Math.floor(i/n),c=i%n,g=S.reg[i];
+      const b=document.createElement('button'); b.type='button'; b.className='cell'; b.dataset.i=i;
+      b.setAttribute('role','gridcell'); b.tabIndex=i===0?0:-1;
+      const thick=2.5,thin=.5;
+      b.style.borderTopWidth=(r>0?(S.reg[i-n]!==g?thick:thin):0)+'px';
+      b.style.borderLeftWidth=(c>0?(S.reg[i-1]!==g?thick:thin):0)+'px';
+      b.style.borderRightWidth='0'; b.style.borderBottomWidth='0';
+      b.innerHTML=`<span class="bgc" style="background-color:${COLORS[S.colors[g]]}"></span><span class="m"></span>`;
+      boardEl.appendChild(b); cells.push(b);
+    }
+  }
+  const bad=conflicts();
+  let crowns=0;
+  for(let i=0;i<n*n;i++){
+    const m=S.marks[i], b=cells[i], slot=b.lastChild;
+    const want=m===2?'crown':m===1?'x':'';
+    if(slot.dataset.k!==want){ slot.dataset.k=want; slot.innerHTML=want==='crown'?CROWN:want==='x'?XM(false):want==='auto'?XM(true):''; slot.style.display='contents'; }
+    if(m===2) crowns++;
+    b.classList.toggle('bad',bad.has(i));
+    const r=Math.floor(i/n)+1,c=i%n+1;
+    b.setAttribute('aria-label',`Ligne ${r}, colonne ${c}, ${m===2?'couronne':m===1?'marquée':'vide'}`);
+  }
+  $('count').textContent=`Couronnes : ${crowns} / ${n}`;
+  $('warn').textContent=bad.size?'Conflit entre couronnes':'';
+  $('undo').disabled=!history.length||S.won;
+  $('hint').disabled=S.won; $('reveal').disabled=S.won; $('clear').disabled=S.won;
+}
+
+function conflicts(){
+  const n=S.n,bad=new Set(),cr=[];
+  S.marks.forEach((m,i)=>{if(m===2)cr.push(i);});
+  for(let a=0;a<cr.length;a++)for(let b=a+1;b<cr.length;b++){
+    const i=cr[a],j=cr[b],ri=Math.floor(i/n),ci=i%n,rj=Math.floor(j/n),cj=j%n;
+    if(ri===rj||ci===cj||S.reg[i]===S.reg[j]||(Math.abs(ri-rj)<=1&&Math.abs(ci-cj)<=1)){bad.add(i);bad.add(j);}
+  }
+  return bad;
+}
+function blocks(i,j){ // une couronne en i interdit-elle la case j ?
+  if(i===j) return false; const n=S.n,r=Math.floor(i/n),c=i%n,rj=Math.floor(j/n),cj=j%n;
+  return rj===r||cj===c||S.reg[j]===S.reg[i]||(Math.abs(rj-r)<=1&&Math.abs(cj-c)<=1);
+}
+// Changements pour passer la case i à l'état "to", avec marquage auto des cases bloquées
+function changesFor(i,to){
+  const ch=[{i,to}];
+  if(!$('auto').checked) return ch;
+  const N=S.n*S.n;
+  if(to===2){
+    for(let j=0;j<N;j++) if(S.marks[j]===0 && blocks(i,j)) ch.push({i:j,to:1,auto:true});
+  } else if(S.marks[i]===2){
+    const others=[]; S.marks.forEach((m,k)=>{ if(m===2&&k!==i) others.push(k); });
+    for(let j=0;j<N;j++) if(j!==i && S.marks[j]===1 && S.autoX[j] && !others.some(k=>blocks(k,j))) ch.push({i:j,to:0});
+  }
+  return ch;
+}
+
+function apply(changes){ // changes: [{i,to,auto}]
+  const rec=[];
+  for(const {i,to,auto} of changes){ if(S.marks[i]===to) continue; rec.push({i,from:S.marks[i],fromAuto:S.autoX[i]}); S.marks[i]=to; S.autoX[i]=!!auto; }
+  if(rec.length) history.push(rec);
+  clearHint();
+  render(false); checkWin(); save();
+}
+function tap(i){ if(genBusy||S.won) return; apply(changesFor(i,(S.marks[i]+1)%3)); }
+
+function checkWin(){
+  if(S.won) return;
+  const n=S.n;
+  for(let r=0;r<n;r++){ for(let c=0;c<n;c++){ const i=r*n+c; if((S.marks[i]===2)!==(S.sol[r]===c)) return; } }
+  S.won=true; stopTimer(); boardEl.classList.add('won');
+  cells.forEach((b,i)=>{const s=b.querySelector('.crown'); if(s) s.style.animationDelay=(Math.floor(i/n)*70)+'ms';});
+  const lv=LEVELS.find(l=>l.id===S.lv), key=`${S.lv}-${S.n}`;
+  let note='';
+  if(!S.hints){ const prev=bestTimes[key]; if(!prev||S.elapsed<prev){bestTimes[key]=S.elapsed; store.set('couronnes-best',bestTimes); note=prev?'Nouveau record':'Premier record';} else note='Record : '+fmt(prev); }
+  else note=`${S.hints} indice${S.hints>1?'s':''} utilisé${S.hints>1?'s':''}, temps non retenu pour le record`;
+  $('winLevel').textContent=`${lv.name}, ${S.n}×${S.n}`;
+  $('winTime').textContent=fmt(S.elapsed);
+  $('winBest').textContent=note;
+  render(false); save();
+  const wonS=S;
+  setTimeout(()=>{ if(S!==wonS||genBusy) return; try{$('win').showModal();}catch(e){$('win').setAttribute('open','');} },700);
+}
+
+// ---------- Indices par déduction logique ----------
+const REGION_NAMES=['rose','jaune','verte','turquoise','lavande','orange','bleue','beige','mauve','grise'];
+let curHint=null;
+function computeHint(){
+  const n=S.n,N=n*n,R=i=>Math.floor(i/n),C=i=>i%n,pos=i=>`ligne ${R(i)+1}, colonne ${C(i)+1}`;
+  const crowns=[]; S.marks.forEach((m,i)=>{if(m===2)crowns.push(i);});
+  // 1. Erreurs du joueur
+  const bad=conflicts();
+  if(bad.size) return {text:'Ces couronnes se gênent : elles partagent une ligne, une colonne ou une zone, ou se touchent. Retire-en une.',targets:[...bad],sources:[],apply:null};
+  const wrongCrown=crowns.find(i=>S.sol[R(i)]!==C(i));
+  if(wrongCrown!==undefined) return {text:`La couronne en ${pos(wrongCrown)} ne mène à aucune solution. Je ne peux pas l'expliquer par une déduction simple à partir de ta grille : retire-la.`,targets:[wrongCrown],sources:[],apply:()=>changesFor(wrongCrown,0)};
+  const wrongX=S.marks.findIndex((m,i)=>m===1&&S.sol[R(i)]===C(i));
+  if(wrongX>=0) return {text:`La croix en ${pos(wrongX)} est sur une case où une couronne est indispensable. Retire-la.`,targets:[wrongX],sources:[],apply:()=>[{i:wrongX,to:0}]};
+  // Etat des candidats
+  const blockedBy=j=>crowns.find(k=>blocks(k,j));
+  const cand=new Array(N).fill(false);
+  for(let i=0;i<N;i++) cand[i]=S.marks[i]===0 && blockedBy(i)===undefined;
+  const units=[];
+  for(let r=0;r<n;r++) units.push({t:'row',k:r,cells:[...Array(n).keys()].map(c=>r*n+c),lab:`la ligne ${r+1}`,Lab:`La ligne ${r+1}`});
+  for(let c=0;c<n;c++) units.push({t:'col',k:c,cells:[...Array(n).keys()].map(r=>r*n+c),lab:`la colonne ${c+1}`,Lab:`La colonne ${c+1}`});
+  for(let g=0;g<n;g++) units.push({t:'reg',k:g,cells:[...Array(N).keys()].filter(i=>S.reg[i]===g),lab:`la zone ${REGION_NAMES[S.colors[g]]}`,Lab:`La zone ${REGION_NAMES[S.colors[g]]}`});
+  const open=units.filter(u=>!u.cells.some(i=>S.marks[i]===2));
+  const xs=list=>list.map(i=>({i,to:1}));
+  // 2. Cases bloquées par une couronne mais pas encore marquées
+  for(const k of crowns){
+    const t=[...Array(N).keys()].filter(j=>S.marks[j]===0&&blocks(k,j));
+    if(t.length) return {text:`Ces cases sont sur la même ligne, la même colonne ou la même zone que la couronne en ${pos(k)}, ou la touchent : aucune autre couronne n'y est possible.`,targets:t,sources:[k],apply:()=>xs(t)};
+  }
+  // 3. Une seule case libre dans une ligne, colonne ou zone
+  for(const u of open){
+    const cs=u.cells.filter(i=>cand[i]);
+    if(cs.length===1) return {text:`${u.Lab} n'a plus qu'une case libre : sa couronne va forcément en ${pos(cs[0])}.`,targets:cs,sources:u.cells.filter(i=>i!==cs[0]),apply:()=>changesFor(cs[0],2),crown:true};
+  }
+  // 4. Confinements (k unités enfermées dans k lignes/colonnes/zones)
+  const join=a=>a.length===1?a[0]:a.slice(0,-1).join(', ')+' et '+a[a.length-1];
+  const groups=[
+    {a:'reg',b:'row',key:R,txt:(A,B,k)=>k===1?`Toutes les cases libres de ${A[0].lab} sont sur ${B[0].lab} : sa couronne y sera forcément, donc les autres cases de ${B[0].lab} sont impossibles.`:`Les zones ${join(A.map(u=>REGION_NAMES[S.colors[u.k]]))} n'ont des cases libres que sur les lignes ${join(B.map(u=>u.k+1))}. Ces ${k} lignes recevront donc les ${k} couronnes de ces zones : leurs autres cases sont impossibles.`},
+    {a:'reg',b:'col',key:C,txt:(A,B,k)=>k===1?`Toutes les cases libres de ${A[0].lab} sont sur ${B[0].lab} : sa couronne y sera forcément, donc les autres cases de ${B[0].lab} sont impossibles.`:`Les zones ${join(A.map(u=>REGION_NAMES[S.colors[u.k]]))} n'ont des cases libres que sur les colonnes ${join(B.map(u=>u.k+1))}. Ces ${k} colonnes recevront donc les ${k} couronnes de ces zones : leurs autres cases sont impossibles.`},
+    {a:'row',b:'reg',key:i=>S.reg[i],txt:(A,B,k)=>k===1?`Toutes les cases libres de ${A[0].lab} sont dans ${B[0].lab} : la couronne de cette zone sera donc sur ${A[0].lab}, et ses autres cases sont impossibles.`:`Les lignes ${join(A.map(u=>u.k+1))} n'ont des cases libres que dans les zones ${join(B.map(u=>REGION_NAMES[S.colors[u.k]]))}. Ces ${k} zones placeront donc leurs couronnes sur ces lignes : leurs autres cases sont impossibles.`},
+    {a:'col',b:'reg',key:i=>S.reg[i],txt:(A,B,k)=>k===1?`Toutes les cases libres de ${A[0].lab} sont dans ${B[0].lab} : la couronne de cette zone sera donc sur ${A[0].lab}, et ses autres cases sont impossibles.`:`Les colonnes ${join(A.map(u=>u.k+1))} n'ont des cases libres que dans les zones ${join(B.map(u=>REGION_NAMES[S.colors[u.k]]))}. Ces ${k} zones placeront donc leurs couronnes sur ces colonnes : leurs autres cases sont impossibles.`},
+  ];
+  for(let k=1;k<n;k++){
+    for(const g of groups){
+      const us=open.filter(u=>u.t===g.a), m=us.length; if(k>=m) continue;
+      for(let mask=1;mask<(1<<m);mask++){
+        let bits=0; for(let x=mask;x;x&=x-1) bits++; if(bits!==k) continue;
+        const A=us.filter((_,s)=>mask>>s&1), src=new Set(), keys=new Set();
+        for(const u of A) for(const i of u.cells) if(cand[i]){src.add(i);keys.add(g.key(i));}
+        if(keys.size!==k) continue;
+        const B=[...keys].sort((a,b)=>a-b).map(v=>units.find(u=>u.t===g.b&&u.k===v));
+        const t=[]; for(const u of B) for(const i of u.cells) if(cand[i]&&!src.has(i)) t.push(i);
+        if(t.length) return {text:g.txt(A,B,k),targets:t,sources:[...src],apply:()=>xs(t)};
+      }
+    }
+  }
+  // 5. Une couronne ici viderait directement une unité
+  for(const u of open){
+    const cs=u.cells.filter(i=>cand[i]);
+    const t=[]; for(let i=0;i<N;i++) if(cand[i]&&!u.cells.includes(i)&&cs.every(j=>blocks(i,j))) t.push(i);
+    if(t.length) return {text:`${t.length>1?'Une couronne sur l\'une de ces cases':'Une couronne sur cette case'} éliminerait toutes les cases libres de ${u.lab}, qui n'aurait plus de place pour sa couronne. ${t.length>1?'Ces cases sont donc impossibles.':'Cette case est donc impossible.'}`,targets:t,sources:cs,apply:()=>xs(t)};
+  }
+  // 6. Raisonnement par l'absurde avec placements forcés
+  for(let i=0;i<N;i++){
+    if(!cand[i]) continue;
+    const c2=cand.slice(), placed=new Set([...crowns,i]), forced=[];
+    const put=x=>{placed.add(x); for(let j=0;j<N;j++) if(blocks(x,j)) c2[j]=false; c2[x]=false;};
+    put(i); let empty=null;
+    for(let guard=0;guard<n*3&&!empty;guard++){
+      let prog=false;
+      for(const u of units){ if(u.cells.some(x=>placed.has(x))) continue;
+        const cs=u.cells.filter(x=>c2[x]);
+        if(cs.length===0){empty=u;break;}
+        if(cs.length===1){forced.push(cs[0]);put(cs[0]);prog=true;break;}
+      }
+      if(!prog) break;
+    }
+    if(empty){
+      const chain=forced.length?` Elle forcerait ensuite ${forced.length===1?'une couronne':forced.length+' couronnes'} (en pointillés), et ${empty.lab} n'aurait plus aucune case libre.`:` ${empty.Lab} n'aurait plus aucune case libre.`;
+      return {text:`Suppose une couronne en ${pos(i)}.${chain} C'est une contradiction : cette case est impossible.`,targets:[i],sources:forced,apply:()=>xs([i])};
+    }
+  }
+  // 7. Pas de déduction trouvée : on donne une couronne
+  const rows=[...Array(n).keys()].filter(r=>S.marks[r*n+S.sol[r]]!==2);
+  if(!rows.length) return null;
+  const t=rows[0]*n+S.sol[rows[0]];
+  return {text:`Je ne trouve pas de déduction simple à partir de ta grille. Voici une couronne de la solution, en ${pos(t)}.`,targets:[t],sources:[],apply:()=>changesFor(t,2),crown:true};
+}
+function showHint(h){
+  clearHint(); if(!h) return; curHint=h;
+  h.sources.forEach(i=>cells[i].classList.add('hl-src'));
+  h.targets.forEach(i=>cells[i].classList.add('hl'));
+  $('hintText').textContent=h.text;
+  $('hintApply').hidden=!h.apply;
+  $('hintApply').textContent=h.crown?'Placer la couronne':(h.apply&&h.text.startsWith('La croix')?'Retirer la croix':h.text.includes('retire-la')?'Retirer la couronne':'Marquer ces cases');
+  $('hintBox').hidden=false;
+}
+function clearHint(){ curHint=null; $('hintBox').hidden=true; cells.forEach(b=>b.classList.remove('hl','hl-src')); }
+function revealCrown(){
+  if(genBusy||S.won) return; const n=S.n;
+  const rows=[...Array(n).keys()].filter(r=>S.marks[r*n+S.sol[r]]!==2);
+  if(!rows.length) return;
+  // de préférence une case qui n'entre pas en conflit avec les couronnes déjà posées
+  const crowns=[]; S.marks.forEach((m,i)=>{if(m===2)crowns.push(i);});
+  const ok=rows.filter(r=>!crowns.some(k=>blocks(k,r*n+S.sol[r])));
+  const pool=ok.length?ok:rows, r=pool[rnd(pool.length)], t=r*n+S.sol[r];
+  S.hints++; apply(changesFor(t,2));
+  const b=cells[t]; b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
+}
+function hint(){ if(genBusy||S.won) return; S.hints++; showHint(computeHint()); save(); }
+function startTimer(){ stopTimer(); if(S.won){ $('timer').textContent=fmt(S.elapsed); return; }
+  lastTick=performance.now(); $('timer').textContent=fmt(S.elapsed);
+  timerId=setInterval(()=>{ const now=performance.now(); if(!document.hidden){S.elapsed+=(now-lastTick)/1000;} lastTick=now; $('timer').textContent=fmt(S.elapsed); },250);
+}
+function stopTimer(){ if(timerId) clearInterval(timerId); timerId=null; }
+let saveT=0; function save(){ const now=Date.now(); if(now-saveT<300) {clearTimeout(save.t); save.t=setTimeout(save,350); return;} saveT=now; store.set('couronnes-state',S); store.set('couronnes-autox',$('auto').checked); }
+setInterval(()=>{ if(S&&!S.won) store.set('couronnes-state',S); },3000);
+
+// ---------- Entrées : appui, glissé, clavier ----------
+let drag=null;
+function cellFromPoint(x,y){ const el=document.elementFromPoint(x,y); const b=el&&el.closest?el.closest('.cell'):null; return b&&boardEl.contains(b)?+b.dataset.i:-1; }
+boardEl.addEventListener('pointerdown',e=>{
+  const b=e.target.closest('.cell'); if(!b||genBusy||S.won||(e.button!==undefined&&e.button!==0)) return;
+  const i=+b.dataset.i; drag={start:i,last:i,moved:false,mode:S.marks[i]===1?'clear':'mark',changes:new Map()};
+  try{boardEl.setPointerCapture(e.pointerId);}catch(_){}
+  e.preventDefault();
+});
+boardEl.addEventListener('pointermove',e=>{
+  if(!drag) return; const i=cellFromPoint(e.clientX,e.clientY); if(i<0||i===drag.last) return;
+  if(!drag.moved){ drag.moved=true; touchDrag(drag.start); }
+  drag.last=i; touchDrag(i);
+});
+function touchDrag(i){
+  const m=S.marks[i];
+  if(drag.mode==='mark'&&m===0){S.marks[i]=1;drag.changes.set(i,[0,S.autoX[i]]);S.autoX[i]=false;}
+  else if(drag.mode==='clear'&&m===1){drag.changes.set(i,[1,S.autoX[i]]);S.marks[i]=0;S.autoX[i]=false;}
+  render(false);
+}
+function endDrag(){
+  if(!drag) return; const d=drag; drag=null;
+  if(d.moved) clearHint();
+  if(!d.moved){ tap(d.start); cells[d.start].focus({preventScroll:true}); return; }
+  if(d.changes.size) history.push([...d.changes].map(([i,[from,fromAuto]])=>({i,from,fromAuto})));
+  render(false); checkWin(); save();
+}
+boardEl.addEventListener('pointerup',endDrag);
+boardEl.addEventListener('pointercancel',()=>{ if(drag){ for(const [i,[from,fa]] of drag.changes){S.marks[i]=from;S.autoX[i]=fa;} drag=null; render(false);} });
+boardEl.addEventListener('click',e=>{ if(e.detail!==0) return; const b=e.target.closest('.cell'); if(b) tap(+b.dataset.i); }); // clavier (Entrée/Espace)
+boardEl.addEventListener('keydown',e=>{
+  const b=e.target.closest('.cell'); if(!b) return; const n=S.n,i=+b.dataset.i; let j=-1;
+  if(e.key==='ArrowRight'&&i%n<n-1) j=i+1; else if(e.key==='ArrowLeft'&&i%n>0) j=i-1;
+  else if(e.key==='ArrowDown'&&i+n<n*n) j=i+n; else if(e.key==='ArrowUp'&&i-n>=0) j=i-n;
+  if(j>=0){ e.preventDefault(); cells[i].tabIndex=-1; cells[j].tabIndex=0; cells[j].focus(); }
+});
+
+$('undo').addEventListener('click',()=>{ if(genBusy) return; const rec=history.pop(); if(!rec) return; for(const {i,from,fromAuto} of rec){S.marks[i]=from;S.autoX[i]=!!fromAuto;} clearHint(); render(false); save(); });
+$('hint').addEventListener('click',hint);
+$('reveal').addEventListener('click',revealCrown);
+$('hintApply').addEventListener('click',()=>{ const h=curHint; if(!h||!h.apply) return; apply(h.apply()); });
+$('hintClose').addEventListener('click',clearHint);
+$('clear').addEventListener('click',()=>{ if(genBusy) return; if(!S.marks.some(m=>m)) return; apply(S.marks.map((m,i)=>({i,to:0}))); });
+$('new').addEventListener('click',()=>{ if(confirmLeave()) newGame(); });
+$('auto').addEventListener('change',()=>save());
+$('winClose').addEventListener('click',()=>$('win').close());
+$('winNew').addEventListener('click',()=>{ $('win').close(); newGame(); });
+
+// ---------- Démarrage ----------
+buildLevels();
+bestTimes=store.get('couronnes-best')||{};
+{const p=store.get('couronnes-pref'); if(p&&LEVELS.some(l=>l.id===p.lv)&&SIZES.includes(p.n)) pref=p;}
+{const a=store.get('couronnes-autox'); $('auto').checked=a===null?true:!!a;}
+const saved=store.get('couronnes-state');
+if(saved && saved.n && Array.isArray(saved.reg) && saved.reg.length===saved.n*saved.n){
+  S=saved; pref={lv:S.lv,n:S.n}; if(!Array.isArray(S.colors)) S.colors=[...Array(S.n).keys()]; if(!Array.isArray(S.autoX)) S.autoX=new Array(S.n*S.n).fill(false); history=[]; render(true); if(S.won) boardEl.classList.add('won'); startTimer();
+} else newGame();
+</script>
+</body>
+</html>
